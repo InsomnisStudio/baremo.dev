@@ -1,0 +1,27 @@
+---
+// A catalogue card. PriceBrowser's tileHtml writes the same markup in the browser.
+import type { Locale } from "../../i18n";
+import { categoryName, formatDate, formatPrice, imageUrl, itemHref, type PriceItem } from "../../data/prices";
+import { pricesText } from "../../data/prices-i18n";
+
+interface Props {
+    item: PriceItem;
+    lang: Locale;
+}
+
+const { item, lang } = Astro.props;
+const art = item.image ? imageUrl(item.id, 352) : item.placeholder;
+---
+
+<a href={itemHref(item, lang)} class="bm-tile">
+    <div class="bm-tile-art">
+        {art ? <img src={art} width="150" height="150" alt="" loading="lazy" decoding="async" /> : <span class="bm-noart"></span>}
+    </div>
+    <div class="bm-tile-foot">
+        <div>
+            <p class="bm-tile-name">{item.displayName}</p>
+            <p class="bm-tile-sub">{item.platform_name ?? categoryName(item.category, lang)} · <time datetime={item.updated_at}>{formatDate(item.updated_at, lang)}</time></p>
+        </div>
+        <span class="bm-tile-price">{formatPrice(item.price_cents, lang)}<small>{pricesText[lang].referenceShort}</small></span>
+    </div>
+</a>

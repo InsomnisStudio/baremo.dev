@@ -1,0 +1,467 @@
+---
+// Search and filter a list of prices as a grid of cards. The cards are rendered
+// in the browser from compact JSON: with ~2,700 products, server-rendered rows
+// made /es/tasador/ a 2.8 MB page. The first cards are rendered anyway for
+// crawlers and no-JS; every product also has its own page in the sitemap.
+// The page's title goes in the slot, over the cards.
+import PriceTile from "./PriceTile.astro";
+import type { Locale } from "../../i18n";
+import {
+    categories,
+    categoryHref,
+    categoryName,
+    imageUrl,
+    itemHref,
+    priceSpread,
+    type PriceItem,
+} from "../../data/prices";
+import { pricesText } from "../../data/prices-i18n";
+
+interface Props {
+    items: PriceItem[];
+    lang: Locale;
+    // Group chips (Componentes de PC, Videojuegos…): only on the search page.
+    showGroups?: boolean;
+    // The group or kind the page is about, to show its sub-filters right away.
+    fixedGroup?: string;
+    placeholder?: string;
+}
+
+const { items, lang, showGroups = false, fixedGroup = "" } = Astro.props;
+const t = pricesText[lang];
+const placeholder = Astro.props.placeholder ?? t.searchPlaceholder;
+// The search page opens on the latest prices; a category, in order of name.
+const defaultSort = showGroups ? "-date" : "name";
+const spread = priceSpread(fixedGroup || "all");
+const tallest = spread ? Math.max(...spread.counts) : 0;
+
+const groups = new Map<string, { id: string; name: string; count: number }>();
+for (const c of categories) {
+    const key = c.group?.id ?? c.id;
+    const entry = groups.get(key) ?? { id: key, name: categoryName(key, lang), count: 0 };
+    entry.count += c.count;
+    groups.set(key, entry);
+}
+
+// Second row: the kinds of a group, or the platforms of the games.
+const platforms = new Map<string, { name: string; count: number }>();
+for (const i of items) {
+    if (!i.platform) continue;
+    const entry = platforms.get(i.platform) ?? { name: i.platform_name ?? i.platform, count: 0 };
+    entry.count++;
+    platforms.set(i.platform, entry);
+}
+const subChips = [
+    ...categories
+        .filter((c) => c.group)
+        .map((c) => ({ key: c.id, field: "category", parent: c.group!.id, name: categoryName(c.id, lang), count: c.count })),
+    ...[...platforms]
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([key, p]) => ({ key, field: "platform", parent: "game", name: p.name, count: p.count })),
+];
+
+const rows = items.map((i) => ({
+    h: itemHref(i, lang),
+    n: i.displayName,
+    k: i.platform_name ?? categoryName(i.category, lang),
+    c: i.category,
+    g: i.group ?? i.category,
+    pl: i.platform,
+    v: i.price_cents,
+    d: i.updated_at,
+    s: i.searchText,
+    f: i.image ? imageUrl(i.id, 352) : (i.placeholder ?? undefined),
+}));
+const firstRows = [...items]
+    .sort((a, b) => (showGroups ? b.updated_at.localeCompare(a.updated_at) : a.displayName.localeCompare(b.displayName, lang)))
+    .slice(0, 24);
+const sorts = [
+    { key: "name", label: t.product },
+    { key: "price", label: t.price },
+    { key: "date", label: t.updated },
+];
+---
+
+<div
+    class="bm-wrap"
+    data-price-browser
+    data-fixed-group={fixedGroup}
+    data-default-sort={defaultSort}
+    data-autofocus={showGroups ? "" : undefined}
+    data-locale={t.dateLocale}
+    data-more={t.more}
+    data-ref={t.referenceShort}
+    data-remove={t.removeFilter("{}")}
+    data-edges={spread ? JSON.stringify(spread.edges) : undefined}
+>
+    <div class="bm-cat" data-catalog>
+        <aside class="bm-cat-side" aria-label={t.filters}>
+            <p class="bm-cat-filters">
+                <svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h7M12 4h2M2 12h2M7 12h7"></path><rect x="9" y="2.5" width="3" height="3"></rect><rect x="4" y="10.5" width="3" height="3"></rect></svg>
+                {t.filters}
+            </p>
+            <div class="bm-cat-search">
+                <form class="bm-search bm-search-s" role="search" data-price-form>
+                    <span class="bm-muted flex"><svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3.5 3.5"></path></svg></span>
+                    <input type="search" data-price-query autocomplete="off" spellcheck="false" placeholder={placeholder} aria-label={t.searchLabel} />
+                </form>
+                <button type="button" class="bm-btn bm-btn-outline bm-filters-toggle" data-filters-toggle aria-expanded="false" aria-controls="price-filters">
+                    <svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h7M12 4h2M2 12h2M7 12h7"></path><rect x="9" y="2.5" width="3" height="3"></rect><rect x="4" y="10.5" width="3" height="3"></rect></svg>
+                    {t.filters}
+                </button>
+            </div>
+            <div class="bm-cat-body" id="price-filters" data-filters>
+                {showGroups ? (
+                    <div>
+                        <span class="bm-label">{t.categoryFilterLabel}</span>
+                        <div class="bm-toggles" role="group" aria-label={t.categoryFilterLabel}>
+                            <button type="button" class="bm-toggle" data-chip="">{t.all} <span class="bm-data">{items.length}</span></button>
+                            {[...groups.values()].map((g) => (
+                                <button type="button" class="bm-toggle" data-chip={g.id}>{g.name} <span class="bm-data">{g.count}</span></button>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <nav aria-label={t.categoryFilterLabel}>
+                        <span class="bm-label">{t.categoryFilterLabel}</span>
+                        <ul class="bm-cats">
+                            {categories.map((c) => (
+                                <li><a href={categoryHref(c.id, lang)} aria-current={c.id === fixedGroup ? "page" : undefined}>{categoryName(c.id, lang)} <sup>{c.count}</sup></a></li>
+                            ))}
+                        </ul>
+                    </nav>
+                )}
+                <div class="hidden" data-subchips-box>
+                    <span class="bm-label">{t.subFilterLabel}</span>
+                    <div class="bm-toggles" data-subchips role="group" aria-label={t.subFilterLabel}>
+                        {subChips.map((c) => (
+                            <button type="button" class="bm-toggle" data-subchip={c.key} data-field={c.field} data-parent={c.parent} data-name={c.name}>{c.name} <span class="bm-data">{c.count}</span></button>
+                        ))}
+                    </div>
+                </div>
+                {spread && (
+                    <div>
+                        <span class="bm-label">{t.priceFilter}</span>
+                        <div class="bm-hist-bars" aria-hidden="true" data-hist-bars>
+                            {spread.counts.map((count, i) => (
+                                <span class:list={["in", i === spread.median && "md"]} style={`height:${count ? Math.max(6, Math.round((Math.sqrt(count) / Math.sqrt(tallest)) * 100)) : 0}%`}></span>
+                            ))}
+                        </div>
+                        <div class="bm-hist-track" data-hist-track style="--from:0%;--to:100%">
+                            <div class="bm-hist-sel"></div>
+                            <input type="range" min="0" max={spread.edges.length - 1} value="0" data-hist-low aria-label={t.minPrice} />
+                            <input type="range" min="0" max={spread.edges.length - 1} value={spread.edges.length - 1} data-hist-high aria-label={t.maxPrice} />
+                        </div>
+                        <div class="bm-minmax">
+                            <label>€ <input type="number" min="0" inputmode="numeric" data-price-min placeholder={String(spread.edges[0])} aria-label={t.minPrice} /></label>
+                            <span>–</span>
+                            <label>€ <input type="number" min="0" inputmode="numeric" data-price-max placeholder={String(spread.edges.at(-1))} aria-label={t.maxPrice} /></label>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </aside>
+
+        <section class="bm-cat-main" data-price-list>
+            <slot />
+            <p class="bm-data bm-muted mt-3 mb-6"><span data-price-count>{items.length}</span> {t.products}</p>
+
+            <div class="bm-bar">
+                <div class="bm-chips" data-price-chips></div>
+                <div class="bm-sort">
+                    {sorts.map((s) => (
+                        <button type="button" class="bm-btn bm-btn-s" data-sort={s.key}>{s.label} <span data-arrow></span></button>
+                    ))}
+                </div>
+            </div>
+
+            <ul class="bm-grid bm-grid-3" data-price-body>
+                {firstRows.map((item) => <li><PriceTile item={item} lang={lang} /></li>)}
+            </ul>
+
+            <div class="mt-6 text-center">
+                <button type="button" data-price-more class="bm-btn bm-btn-outline hidden">{t.more}</button>
+            </div>
+
+            <div class="hidden py-10" data-price-empty>
+                <p class="bm-h2">{t.emptyTitle}</p>
+                <p class="bm-muted mt-3">{t.emptyText}</p>
+            </div>
+    </section>
+    </div>
+
+    <script type="application/json" data-price-rows set:html={JSON.stringify(rows)} />
+</div>
+
+<script>
+    interface Row {
+        h: string;
+        n: string;
+        k: string;
+        c: string;
+        g: string;
+        pl: string | null;
+        v: number;
+        d: string;
+        s: string;
+        // The image, if there is one.
+        f?: string;
+    }
+
+    const PAGE = 24;
+    const normalize = (text: string) =>
+        text
+            .normalize("NFD")
+            .replace(/[̀-ͯ]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, " ")
+            .trim();
+    const escape = (text: string) =>
+        text.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]!);
+    // Same markup as PriceTile.astro, formatted for the page's language.
+    const tileHtml = (r: Row, euros: Intl.NumberFormat, day: Intl.DateTimeFormat, ref: string) => `<li><a href="${r.h}" class="bm-tile">
+        <div class="bm-tile-art">${r.f
+            ? `<img src="${r.f}" width="150" height="150" alt="" loading="lazy" decoding="async">`
+            : `<span class="bm-noart"></span>`}</div>
+        <div class="bm-tile-foot">
+            <div>
+                <p class="bm-tile-name">${escape(r.n)}</p>
+                <p class="bm-tile-sub">${escape(r.k)} · <time datetime="${r.d}">${day.format(new Date(r.d))}</time></p>
+            </div>
+            <span class="bm-tile-price">${euros.format(Math.round(r.v / 100))}<small>${ref}</small></span>
+        </div>
+    </a></li>`;
+    const removeIcon = `<svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"></path></svg>`;
+
+    for (const root of document.querySelectorAll<HTMLElement>("[data-price-browser]")) {
+        const rows: Row[] = JSON.parse(root.querySelector("[data-price-rows]")!.textContent!);
+        const refShort = root.dataset.ref ?? "";
+        const input = root.querySelector<HTMLInputElement>("[data-price-query]")!;
+        const catalog = root.querySelector<HTMLElement>("[data-catalog]")!;
+        const list = root.querySelector<HTMLElement>("[data-price-list]")!;
+        const filters = root.querySelector<HTMLElement>("[data-filters]")!;
+        const filtersToggle = root.querySelector<HTMLElement>("[data-filters-toggle]")!;
+        const body = root.querySelector<HTMLElement>("[data-price-body]")!;
+        const counts = root.querySelectorAll<HTMLElement>("[data-price-count]");
+        const more = root.querySelector<HTMLButtonElement>("[data-price-more]")!;
+        const empty = root.querySelector<HTMLElement>("[data-price-empty]")!;
+        const subBox = root.querySelector<HTMLElement>("[data-subchips-box]")!;
+        const chips = root.querySelector<HTMLElement>("[data-price-chips]")!;
+        const fixedGroup = root.dataset.fixedGroup ?? "";
+        const defaultSort = root.dataset.defaultSort ?? "name";
+        const locale = root.dataset.locale ?? "es-ES";
+        const moreLabel = root.dataset.more ?? "";
+        const removeLabel = root.dataset.remove ?? "";
+        const edges: number[] = JSON.parse(root.dataset.edges ?? "[]");
+        const low = root.querySelector<HTMLInputElement>("[data-hist-low]");
+        const high = root.querySelector<HTMLInputElement>("[data-hist-high]");
+        const minInput = root.querySelector<HTMLInputElement>("[data-price-min]");
+        const maxInput = root.querySelector<HTMLInputElement>("[data-price-max]");
+        const track = root.querySelector<HTMLElement>("[data-hist-track]");
+        const bars = root.querySelectorAll<HTMLElement>("[data-hist-bars] span");
+        const euros = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR", maximumFractionDigits: 0, useGrouping: "always" });
+        const day = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Madrid" });
+
+        const params = new URLSearchParams(location.search);
+        const euroParam = (name: string) => {
+            const value = parseInt(params.get(name) ?? "", 10);
+            return edges.length && value >= 0 ? value : null;
+        };
+        const state = {
+            q: params.get("q") ?? "",
+            g: params.get("g") ?? fixedGroup,
+            sub: params.get("f") ?? "",
+            // Empty until a sort is chosen: the page's own, or by name while searching.
+            sort: params.get("o") ?? "",
+            min: euroParam("min"),
+            max: euroParam("max"),
+            shown: PAGE,
+        };
+        input.value = state.q;
+
+        const sorters: Record<string, (a: Row, b: Row) => number> = {
+            name: (a, b) => normalize(a.n).localeCompare(normalize(b.n), locale, { numeric: true }),
+            "-name": (a, b) => normalize(b.n).localeCompare(normalize(a.n), locale, { numeric: true }),
+            price: (a, b) => a.v - b.v,
+            "-price": (a, b) => b.v - a.v,
+            date: (a, b) => a.d.localeCompare(b.d),
+            "-date": (a, b) => b.d.localeCompare(a.d),
+        };
+        const currentSort = () => state.sort || (state.q.trim() ? "name" : defaultSort);
+
+        const renderPrice = () => {
+            if (!track || !low || !high || !minInput || !maxInput) return;
+            const column = (euro: number, fallback: number) => {
+                const at = edges.findLastIndex((edge) => edge <= euro);
+                return at < 0 ? fallback : at;
+            };
+            const from = state.min === null ? 0 : column(state.min, 0);
+            const to = state.max === null ? edges.length - 1 : Math.max(column(state.max, 0), from);
+            low.value = String(from);
+            high.value = String(to);
+            track.style.setProperty("--from", `${(from / (edges.length - 1)) * 100}%`);
+            track.style.setProperty("--to", `${(to / (edges.length - 1)) * 100}%`);
+            bars.forEach((bar, i) => bar.classList.toggle("in", i >= from && i < to));
+            if (document.activeElement !== minInput) minInput.value = state.min === null ? "" : String(state.min);
+            if (document.activeElement !== maxInput) maxInput.value = state.max === null ? "" : String(state.max);
+        };
+
+        const renderChips = () => {
+            const list: { key: string; text: string }[] = [];
+            if (state.min !== null || state.max !== null) {
+                const from = state.min ?? edges[0];
+                const to = state.max ?? edges.at(-1)!;
+                list.push({ key: "price", text: `${from.toLocaleString(locale)}–${euros.format(to)}` });
+            }
+            if (state.sub) {
+                const [field, key] = state.sub.split(":");
+                const chip = root.querySelector<HTMLElement>(`[data-subchip="${CSS.escape(key)}"][data-field="${field}"]`);
+                if (chip) list.push({ key: "sub", text: chip.dataset.name ?? key });
+            }
+            chips.innerHTML = list
+                .map((c) => `<span class="bm-chip">${escape(c.text)}<button type="button" data-remove-chip="${c.key}" aria-label="${escape(removeLabel.replace("{}", c.text))}">${removeIcon}</button></span>`)
+                .join("");
+        };
+
+        const render = () => {
+            const query = normalize(state.q);
+            const tokens = query.split(" ").filter(Boolean);
+            const [field, key] = state.sub.split(":");
+            const sort = currentSort();
+            let found = rows.filter(
+                (r) =>
+                    (!state.g || r.g === state.g || r.c === state.g) &&
+                    (!state.sub || (field === "platform" ? r.pl : r.c) === key) &&
+                    (state.min === null || r.v >= state.min * 100) &&
+                    (state.max === null || r.v <= state.max * 100) &&
+                    tokens.every((t) => r.s.includes(t)),
+            );
+            found.sort(sorters[sort] ?? sorters.name);
+            // While typing, names that start with the query come first.
+            if (query && sort === "name") {
+                const starts = (r: Row) => (normalize(r.n).startsWith(query) ? 0 : 1);
+                found = found.map((r, i) => [r, i] as const).sort((a, b) => starts(a[0]) - starts(b[0]) || a[1] - b[1]).map(([r]) => r);
+            }
+
+            body.innerHTML = found.slice(0, state.shown).map((r) => tileHtml(r, euros, day, refShort)).join("");
+            counts.forEach((count) => (count.textContent = found.length.toLocaleString(locale)));
+            more.classList.toggle("hidden", found.length <= state.shown);
+            more.textContent = `${moreLabel} (${(found.length - state.shown).toLocaleString(locale)})`;
+            empty.classList.toggle("hidden", found.length > 0);
+            body.classList.toggle("hidden", found.length === 0);
+
+            root.querySelectorAll<HTMLElement>("[data-chip]").forEach((chip) =>
+                chip.setAttribute("aria-pressed", String(chip.dataset.chip === state.g)),
+            );
+            let visibleSubs = 0;
+            root.querySelectorAll<HTMLElement>("[data-subchip]").forEach((chip) => {
+                const visible = chip.dataset.parent === state.g;
+                chip.hidden = !visible;
+                visibleSubs += visible ? 1 : 0;
+                chip.setAttribute("aria-pressed", String(`${chip.dataset.field}:${chip.dataset.subchip}` === state.sub));
+            });
+            subBox.classList.toggle("hidden", visibleSubs === 0);
+            root.querySelectorAll<HTMLElement>("[data-sort]").forEach((button) => {
+                const column = button.dataset.sort!;
+                button.querySelector<HTMLElement>("[data-arrow]")!.textContent = sort === column ? "↑" : sort === `-${column}` ? "↓" : "";
+                button.setAttribute("aria-pressed", String(sort.replace("-", "") === column));
+            });
+            renderPrice();
+            renderChips();
+
+            const next = new URLSearchParams();
+            if (state.q) next.set("q", state.q);
+            if (state.g && state.g !== fixedGroup) next.set("g", state.g);
+            if (state.sub) next.set("f", state.sub);
+            if (state.sort) next.set("o", state.sort);
+            if (state.min !== null) next.set("min", String(state.min));
+            if (state.max !== null) next.set("max", String(state.max));
+            const search = next.toString();
+            history.replaceState(null, "", search ? `?${search}` : location.pathname);
+        };
+
+        // New results start at the top of the list, wherever the page was.
+        const update = () => {
+            state.shown = PAGE;
+            render();
+            if (list.getBoundingClientRect().top < 0) list.scrollIntoView();
+        };
+        const showFilters = (open: boolean) => {
+            filters.classList.toggle("is-open", open);
+            filtersToggle.setAttribute("aria-expanded", String(open));
+        };
+
+        filtersToggle.addEventListener("click", () => {
+            const open = !filters.classList.contains("is-open");
+            showFilters(open);
+            // They open above the list, out of sight if the page has scrolled.
+            if (open) catalog.scrollIntoView();
+        });
+
+        // The list follows the typing: the button only closes the phone's keyboard.
+        root.querySelector("[data-price-form]")!.addEventListener("submit", (event) => {
+            event.preventDefault();
+            input.blur();
+        });
+        input.addEventListener("input", () => {
+            state.q = input.value;
+            update();
+        });
+        more.addEventListener("click", () => {
+            state.shown += PAGE;
+            render();
+        });
+        root.querySelectorAll<HTMLElement>("[data-chip]").forEach((chip) =>
+            chip.addEventListener("click", () => {
+                state.g = chip.dataset.chip ?? "";
+                state.sub = "";
+                update();
+            }),
+        );
+        root.querySelectorAll<HTMLElement>("[data-subchip]").forEach((chip) =>
+            chip.addEventListener("click", () => {
+                const value = `${chip.dataset.field}:${chip.dataset.subchip}`;
+                state.sub = state.sub === value ? "" : value;
+                update();
+            }),
+        );
+        root.querySelectorAll<HTMLElement>("[data-sort]").forEach((button) =>
+            button.addEventListener("click", () => {
+                const column = button.dataset.sort!;
+                // Prices and dates read best highest/newest first.
+                const first = column === "name" ? column : `-${column}`;
+                state.sort = currentSort() === first ? (first.startsWith("-") ? column : `-${column}`) : first;
+                render();
+            }),
+        );
+        chips.addEventListener("click", (event) => {
+            const key = (event.target as Element).closest<HTMLElement>("[data-remove-chip]")?.dataset.removeChip;
+            if (key === "price") state.min = state.max = null;
+            if (key === "sub") state.sub = "";
+            if (!key) return;
+            update();
+        });
+        // Handles move by whole columns; the boxes take any figure.
+        const fromHandles = () => {
+            const last = edges.length - 1;
+            const from = Math.min(Number(low!.value), last - 1);
+            const to = Math.max(Number(high!.value), from + 1);
+            state.min = from === 0 ? null : edges[from];
+            state.max = to === last ? null : edges[to];
+            update();
+        };
+        low?.addEventListener("input", fromHandles);
+        high?.addEventListener("input", fromHandles);
+        const fromBoxes = () => {
+            const read = (box: HTMLInputElement) => (box.value === "" || Number(box.value) < 0 ? null : Math.round(Number(box.value)));
+            state.min = read(minInput!);
+            state.max = read(maxInput!);
+            update();
+        };
+        minInput?.addEventListener("input", fromBoxes);
+        maxInput?.addEventListener("input", fromBoxes);
+        render();
+        // Ready to type; on a phone the keyboard would cover the page on arrival.
+        if (root.dataset.autofocus !== undefined && matchMedia("(min-width: 901px)").matches) input.focus();
+    }
+</script>

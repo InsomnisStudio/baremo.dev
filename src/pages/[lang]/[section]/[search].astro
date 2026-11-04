@@ -1,0 +1,26 @@
+---
+// The page to search and filter the whole catalogue: /es/tasador/buscar/,
+// /en/price-guide/search/…
+import PriceLayout from "../../../layouts/PriceLayout.astro";
+import PriceBrowser from "../../../components/prices/PriceBrowser.astro";
+import { locales, type Locale } from "../../../i18n";
+import { items, localePaths, searchHref } from "../../../data/prices";
+import { pricesText } from "../../../data/prices-i18n";
+
+export function getStaticPaths() {
+    return locales.map((lang) => ({
+        params: { lang, section: pricesText[lang].section, search: pricesText[lang].searchSlug },
+        props: { lang },
+    }));
+}
+
+const { lang } = Astro.props as { lang: Locale };
+const p = pricesText[lang];
+const seo = { title: `${p.catalog} | ${p.seoTitle}`, description: p.seoDescription(items.length) };
+---
+
+<PriceLayout lang={lang} seo={seo} localePaths={localePaths(searchHref)}>
+    <PriceBrowser items={items} lang={lang} showGroups>
+        <h1 class="bm-h1">{p.catalog}</h1>
+    </PriceBrowser>
+</PriceLayout>

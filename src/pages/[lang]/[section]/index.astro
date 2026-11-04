@@ -1,0 +1,103 @@
+---
+// The price guide's landing in every language: /es/tasador/, /en/price-guide/,
+// /fr/argus/, /it/quotazioni/, /pl/wycena/. Searching has its own page.
+import PriceLayout from "../../../layouts/PriceLayout.astro";
+import PriceTile from "../../../components/prices/PriceTile.astro";
+import { locales, type Locale } from "../../../i18n";
+import { items, localePaths, searchHref, sectionHref } from "../../../data/prices";
+import { pricesText } from "../../../data/prices-i18n";
+
+export function getStaticPaths() {
+    return locales.map((lang) => ({ params: { lang, section: pricesText[lang].section }, props: { lang } }));
+}
+
+const { lang } = Astro.props as { lang: Locale };
+const p = pricesText[lang];
+const seo = { title: p.seoTitle, description: p.seoDescription(items.length) };
+const structuredData = [
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: `${p.badge} | Baremo`,
+        url: `https://vallax.es${sectionHref(lang)}`,
+        potentialAction: {
+            "@type": "SearchAction",
+            target: `https://vallax.es${searchHref(lang)}?q={search_term_string}`,
+            "query-input": "required name=search_term_string",
+        },
+    },
+];
+// The latest of each family with a mosaic or a cover, taking turns, to show the
+// catalogue's range.
+const families = ["console", "gpu", "game", "cpu"].map((category) =>
+    items
+        .filter((i) => i.category === category)
+        .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+        .slice(0, 4),
+);
+const showcase = families[0].flatMap((_, turn) => families.map((family) => family[turn]));
+---
+
+<PriceLayout
+    lang={lang}
+    seo={seo}
+    structuredData={structuredData}
+    localePaths={localePaths(sectionHref)}
+>
+    <section class="bm-wrap pt-6">
+        <picture>
+            <!-- Reduced, the SVG's joints between tiles beat against the screen's pixels. -->
+            <source media="(max-width: 900px)" srcset="/img/teselas/mosaico-portada.webp" type="image/webp" />
+            <img class="bm-mosaic" src="/img/teselas/mosaico-portada.svg" width="1024" height="480" alt={p.mosaicAlt} fetchpriority="high" />
+        </picture>
+        <div class="bm-intro">
+            <h1 class="bm-hero">{p.title}</h1>
+            <div>
+                <p class="bm-lead">{p.lead}</p>
+                <a class="bm-btn bm-btn-primary bm-intro-cta" href={searchHref(lang)}>
+                    {p.goToSearch}
+                    <svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="bm-wrap bm-section">
+        <div class="bm-section-head">
+            <h2>{p.fromCatalog}</h2>
+            <div class="bm-arrows">
+                <button type="button" class="bm-btn bm-btn-outline" data-carousel-move="-1" aria-label={p.previous} disabled>
+                    <svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7 4 3 8l4 4"></path></svg>
+                </button>
+                <button type="button" class="bm-btn bm-btn-outline" data-carousel-move="1" aria-label={p.next}>
+                    <svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+                </button>
+            </div>
+        </div>
+        <ul class="bm-carousel" data-carousel>
+            {showcase.map((item) => <li><PriceTile item={item} lang={lang} /></li>)}
+        </ul>
+    </section>
+</PriceLayout>
+
+<script>
+    const row = document.querySelector<HTMLElement>("[data-carousel]")!;
+    const arrows = document.querySelectorAll<HTMLButtonElement>("[data-carousel-move]");
+    const update = () => {
+        const end = row.scrollWidth - row.clientWidth;
+        arrows.forEach((arrow) => {
+            arrow.disabled = arrow.dataset.carouselMove === "-1" ? row.scrollLeft <= 1 : row.scrollLeft >= end - 1;
+        });
+    };
+    arrows.forEach((arrow) =>
+        arrow.addEventListener("click", () => {
+            row.scrollBy({
+                left: Number(arrow.dataset.carouselMove) * row.clientWidth,
+                behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+            });
+        }),
+    );
+    row.addEventListener("scroll", update, { passive: true });
+    addEventListener("resize", update);
+    update();
+</script>

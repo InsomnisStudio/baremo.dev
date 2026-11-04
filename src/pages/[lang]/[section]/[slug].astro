@@ -1,0 +1,244 @@
+---
+// One dynamic segment serves both kinds of page: a category
+// (/es/tasador/tarjetas-graficas/) and a product (/es/tasador/812-rtx-3060/),
+// in every language (/en/price-guide/graphics-cards/…).
+import PriceLayout from "../../../layouts/PriceLayout.astro";
+import PriceBrowser from "../../../components/prices/PriceBrowser.astro";
+import PriceTile from "../../../components/prices/PriceTile.astro";
+import { locales, type Locale } from "../../../i18n";
+import {
+    categories,
+    categoryHref,
+    categoryName,
+    formatDate,
+    formatPrice,
+    imageUrl,
+    itemHref,
+    items,
+    localePaths,
+    priceParts,
+    relatedItems,
+    sectionHref,
+    type PriceCategory,
+    type PriceItem,
+} from "../../../data/prices";
+import { pricesText } from "../../../data/prices-i18n";
+
+type Props = { lang: Locale } & (
+    | { category: PriceCategory; item?: undefined }
+    | { item: PriceItem; category?: undefined }
+);
+
+export function getStaticPaths() {
+    return locales.flatMap((lang) => {
+        const section = pricesText[lang].section;
+        const last = (path: string) => path.split("/").at(-2)!;
+        return [
+            ...categories.map((category) => ({
+                params: { lang, section, slug: last(categoryHref(category.id, lang)) },
+                props: { lang, category },
+            })),
+            ...items.map((item) => ({ params: { lang, section, slug: last(itemHref(item, lang)) }, props: { lang, item } })),
+        ];
+    });
+}
+
+const { lang, category, item } = Astro.props as Props;
+const p = pricesText[lang];
+const site = "https://vallax.es";
+const appStore = "https://apps.apple.com/es/app/vallax/id6793169829";
+const googlePlay = "https://play.google.com/store/apps/details?id=com.insomnis.vallax";
+
+const categoryItems = category ? items.filter((i) => i.category === category.id) : [];
+const catName = categoryName(item ? item.category : category!.id, lang);
+
+const title = item ? item.displayName : catName;
+const seo = item
+    ? {
+          title: p.productSeoTitle(item.displayName),
+          description: p.productSeoDescription(
+              item.displayName,
+              formatPrice(item.price_cents, lang),
+              formatDate(item.updated_at, lang),
+          ),
+      }
+    : {
+          title: p.categorySeoTitle(catName),
+          description: p.categorySeoDescription(catName, categoryItems.length),
+      };
+const paths = localePaths((l) => (item ? itemHref(item, l) : categoryHref(category!.id, l)));
+const crumbs = [
+    { name: p.nav, url: `${site}${sectionHref(lang)}` },
+    ...(item ? [{ name: catName, url: `${site}${categoryHref(item.category, lang)}` }] : []),
+    { name: title, url: `${site}${paths[lang]}` },
+];
+const structuredData = [
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: crumbs.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c.name, item: c.url })),
+    },
+];
+
+const related = item ? relatedItems(item) : [];
+---
+
+<PriceLayout
+    lang={lang}
+    seo={seo}
+    structuredData={structuredData}
+    modifiedAt={item?.updated_at}
+    localePaths={paths}
+>
+    {category && (
+        <PriceBrowser items={categoryItems} lang={lang} fixedGroup={category.id} placeholder={p.searchIn(catName)}>
+            <nav aria-label={p.breadcrumbLabel} class="bm-crumbs">
+                <ol>
+                    {crumbs.slice(0, -1).map((c) => <li><a href={new URL(c.url).pathname}>{c.name}</a></li>)}
+                    <li class="text-ink">{title}</li>
+                </ol>
+            </nav>
+            <h1 class="bm-h1">{catName}</h1>
+        </PriceBrowser>
+    )}
+
+    {item && (
+        <>
+            <section class="bm-wrap pt-8">
+                <div class="bm-item">
+                    <figure>
+                        <div class="bm-plate">
+                            {item.image ? (
+                                <img
+                                    src={imageUrl(item.id, 352)}
+                                    alt={item.category === "game" ? p.coverOf(item.displayName) : item.displayName}
+                                    fetchpriority="high"
+                                    decoding="async"
+                                />
+                            ) : item.placeholder ? (
+                                <img src={item.placeholder} alt="" />
+                            ) : (
+                                <span class="bm-noart"></span>
+                            )}
+                        </div>
+                        {item.image && (
+                            <figcaption class="bm-credit">
+                                {item.image.source === "launchbox" && (
+                                    <>{p.image}: <a href="https://gamesdb.launchbox-app.com/" rel="nofollow noopener" target="_blank">LaunchBox Games Database</a></>
+                                )}
+                                {item.image.source === "icecat" && (
+                                    <>{p.image}: {item.image.artist} via <a href={item.image.page} rel="nofollow noopener" target="_blank">Icecat</a></>
+                                )}
+                                {item.image.source === "commons" && (
+                                    <>{p.photo}: <a href={item.image.page} rel="nofollow noopener" target="_blank">{item.image.artist || "Wikimedia Commons"}</a>, {item.image.license}</>
+                                )}
+                            </figcaption>
+                        )}
+                    </figure>
+                    <div>
+                        <nav aria-label={p.breadcrumbLabel} class="bm-crumbs">
+                            <ol>
+                                {crumbs.slice(0, -1).map((c) => <li><a href={new URL(c.url).pathname}>{c.name}</a></li>)}
+                                <li class="text-ink">{title}</li>
+                            </ol>
+                        </nav>
+                        <h1 class="bm-h1">{item.displayName}</h1>
+                        <p class="bm-item-sub">{catName}{item.platform_name && ` · ${item.platform_name}`}</p>
+                        <p class="bm-figure" role="img" aria-label={`${p.reference}: ${formatPrice(item.price_cents, lang)}`}>
+                            {priceParts(item.price_cents, lang).map((part) =>
+                                part.type === "currency" ? <small>{part.value}</small> : part.value,
+                            )}
+                        </p>
+                        <p class="bm-figure-label">
+                            {p.reference} · {p.updatedOn(formatDate(item.updated_at, lang))}
+                        </p>
+                        <div class="bm-item-actions">
+                            {[
+                                { name: "Wallapop", href: item.wallapopUrl },
+                                { name: "Vinted", href: item.vintedUrl },
+                            ].map((m) => (
+                                <a href={m.href} target="_blank" rel="nofollow noopener" class="bm-btn bm-btn-outline">
+                                    {p.viewOn(m.name)}
+                                    <svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11l6-6M6 5h5v5"></path></svg>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bm-wrap bm-section">
+                <div class="bm-columns">
+                    <aside class="bm-nudge" aria-label={p.withVallax}>
+                        <p>
+                            <span class="bm-code">{p.withVallax}</span>
+                            <strong class="font-medium">{p.nudgeTitle}</strong> {p.nudgeNote}
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <a href={appStore} rel="sponsored noopener" class="bm-btn bm-btn-outline">App Store</a>
+                            <a href={googlePlay} rel="sponsored noopener" class="bm-btn bm-btn-outline">Google Play</a>
+                        </div>
+                    </aside>
+                    <div>
+                        <h2 class="bm-h2">{p.forVallax}</h2>
+                        <p class="bm-muted mt-2 text-[13px] leading-5">{p.forVallaxHelp}</p>
+                        <!-- flutter_vallax imports a pasted Wallapop or Vinted search link
+                             (platform_attributes_section.dart): category and the
+                             platform's own filters, while keywords go in the form. -->
+                        <dl class="bm-copy mt-3">
+                            {[
+                                ...item.vallaxKeywords.map((kw, i) => ({
+                                    label: item.vallaxKeywords.length > 1 ? `${p.keywords} · ${p.option(i + 1)}` : p.keywords,
+                                    value: kw,
+                                })),
+                                { label: p.linkOf("Wallapop"), value: item.wallapopUrl },
+                                { label: p.linkOf("Vinted"), value: item.vintedUrl },
+                            ].map((row) => (
+                                <div>
+                                    <dt class="bm-code bm-muted">{row.label}</dt>
+                                    <dd>{row.value}</dd>
+                                    <dd>
+                                        <button
+                                            type="button"
+                                            class="copy-kw bm-btn bm-btn-outline bm-btn-s"
+                                            data-copy={row.value}
+                                            data-copy-label={p.copy}
+                                            data-copied-label={p.copied}
+                                            data-select-label={p.selectIt}
+                                        >
+                                            <span data-label>{p.copy}</span>
+                                        </button>
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
+                </div>
+            </section>
+
+            {related.length > 0 && (
+                <section class="bm-wrap bm-section">
+                    <div class="bm-section-head"><h2>{p.alsoIn(item.platform_name ?? catName)}</h2></div>
+                    <ul class="bm-grid">
+                        {related.map((other) => <li><PriceTile item={other} lang={lang} /></li>)}
+                    </ul>
+                </section>
+            )}
+        </>
+    )}
+</PriceLayout>
+
+<script>
+    document.querySelectorAll<HTMLButtonElement>(".copy-kw").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const label = button.querySelector<HTMLElement>("[data-label]")!;
+            try {
+                await navigator.clipboard.writeText(button.dataset.copy ?? "");
+                label.textContent = button.dataset.copiedLabel ?? "";
+            } catch {
+                label.textContent = button.dataset.selectLabel ?? "";
+            }
+            setTimeout(() => (label.textContent = button.dataset.copyLabel ?? ""), 1600);
+        });
+    });
+</script>

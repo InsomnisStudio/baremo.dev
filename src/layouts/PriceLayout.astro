@@ -1,0 +1,159 @@
+---
+import "/src/assets/css/styles.css";
+import type { Locale } from "../i18n";
+import { searchHref, sectionHref } from "../data/prices";
+import { pricesText } from "../data/prices-i18n";
+
+interface Props {
+    lang: Locale;
+    seo: { title: string; description: string };
+    structuredData?: Record<string, unknown>[];
+    modifiedAt?: string;
+    // The page's path in each language: /es/tasador/, /en/price-guide/…
+    localePaths: Record<Locale, string>;
+}
+
+const { lang, seo, structuredData = [], modifiedAt, localePaths } = Astro.props;
+const p = pricesText[lang];
+const hreflangByLocale: Record<Locale, string> = {
+    es: "es-ES",
+    en: "en",
+    fr: "fr-FR",
+    it: "it-IT",
+    pl: "pl-PL",
+};
+const languages = Object.entries(localePaths).map(([locale, path]) => ({
+    locale: locale as Locale,
+    href: path,
+    hreflang: hreflangByLocale[locale as Locale],
+    url: new URL(path, Astro.site),
+}));
+---
+
+<!doctype html>
+<html lang={lang}>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <title>{seo.title}</title>
+        <meta name="description" content={seo.description} />
+        <link rel="canonical" href={new URL(localePaths[lang], Astro.site).toString()} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={seo.title} />
+        <meta property="og:description" content={seo.description} />
+        <meta property="og:url" content={new URL(localePaths[lang], Astro.site).toString()} />
+        <meta property="og:site_name" content="Baremo" />
+        <meta property="og:locale" content={hreflangByLocale[lang].replace("-", "_")} />
+        <meta name="twitter:card" content="summary" />
+        {modifiedAt && <meta property="article:modified_time" content={modifiedAt} />}
+        {languages.map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.url.toString()} />)}
+        <link rel="alternate" hreflang="x-default" href={new URL(localePaths.es, Astro.site).toString()} />
+        <meta name="robots" content="index,follow,max-image-preview:large" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="theme-color" content="#ebeae6" />
+        <link rel="preload" href="/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="/fonts/GeistMono-Variable.woff2" as="font" type="font/woff2" crossorigin />
+        {
+            structuredData.map((data) => (
+                <script is:inline type="application/ld+json" set:html={JSON.stringify(data)} />
+            ))
+        }
+        <script is:inline>
+            try {
+                if (localStorage.getItem("baremo-theme") === "grafito") document.documentElement.dataset.theme = "grafito";
+            } catch {}
+        </script>
+    </head>
+    <body>
+        <header class="bm-header">
+            <div class="bm-wrap">
+                <a href={sectionHref(lang)} aria-label="Baremo">
+                    <img class="bm-logo bm-on-papel" src="/baremo-logo-papel.svg" width="114" height="22" alt="Baremo" />
+                    <img class="bm-logo bm-on-grafito" src="/baremo-logo-grafito.svg" width="114" height="22" alt="Baremo" />
+                </a>
+                <div class="bm-header-end">
+                    <a class="bm-btn bm-btn-primary bm-btn-s" href={searchHref(lang)} aria-label={p.findModel}>
+                        <svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3.5 3.5"></path></svg>
+                        <span class="bm-cta-label">{p.findModel}</span>
+                    </a>
+                    <button type="button" class="bm-btn bm-btn-outline bm-btn-s" data-theme-toggle aria-label={p.themeToggle} title={p.themeToggle}>
+                        <svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 2.5v11M8 5h4.5M8 8h5.5M8 11h4.5"></path></svg>
+                    </button>
+                    <details class="language-dropdown">
+                        <summary class="bm-btn bm-btn-outline bm-btn-s">
+                            {lang.toUpperCase()}
+                            <svg class="bm-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"></path></svg>
+                        </summary>
+                        <div class="language-menu">
+                            {languages.map((l) => (
+                                <a href={l.href} hreflang={l.hreflang} class:list={["bm-data", l.locale === lang ? "text-ink" : "text-ink-muted hover:text-ink"]}>
+                                    {l.locale.toUpperCase()}
+                                </a>
+                            ))}
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <slot />
+        </main>
+
+        <footer class="bm-footer">
+            <div class="bm-wrap">
+                <img class="bm-logo bm-on-papel" src="/baremo-logo-papel.svg" width="93" height="18" alt="Baremo" />
+                <img class="bm-logo bm-on-grafito" src="/baremo-logo-grafito.svg" width="93" height="18" alt="Baremo" />
+                <p class="max-w-[60ch]">
+                    {p.about}{" "}{p.supportedBy}{" "}<a href={`https://vallax.es/${lang}/`} rel="sponsored noopener">Vallax</a>.
+                </p>
+                <p class="mt-2 max-w-[80ch]">{p.nonAffiliation}</p>
+            </div>
+        </footer>
+    </body>
+</html>
+
+<script>
+    document.querySelector("[data-theme-toggle]")!.addEventListener("click", () => {
+        const root = document.documentElement;
+        const next = root.dataset.theme === "grafito" ? "papel" : "grafito";
+        root.dataset.theme = next;
+        try {
+            localStorage.setItem("baremo-theme", next);
+        } catch {}
+    });
+</script>
+
+<style>
+    .language-dropdown {
+        position: relative;
+    }
+
+    .language-dropdown summary {
+        list-style: none;
+    }
+
+    .language-dropdown summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .language-menu {
+        position: absolute;
+        z-index: 5;
+        right: 0;
+        top: calc(100% + 8px);
+        display: grid;
+        gap: 2px;
+        min-width: 96px;
+        padding: 6px;
+        border-radius: var(--radius-m);
+        background: var(--surface-raised);
+        box-shadow: var(--shadow-lift);
+    }
+
+    .language-menu a {
+        padding: 8px 10px;
+        border-radius: var(--radius-s);
+    }
+</style>
