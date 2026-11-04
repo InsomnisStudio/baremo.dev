@@ -11,21 +11,14 @@ export default defineConfig({
   site: process.env.SITE_URL || "https://baremo.dev",
   base: base || undefined,
 
-  // The landing used to live under each language's section.
-  redirects: Object.fromEntries(
-    [
-      ["/es/", "/"],
-      ["/es/tasador/", "/"],
-      ["/en/price-guide/", "/en/"],
-      ["/fr/argus/", "/fr/"],
-      ["/it/quotazioni/", "/it/"],
-      ["/pl/wycena/", "/pl/"],
-    ].map(([from, to]) => [from, `${base ?? ""}${to}`]),
-  ),
+  // Spanish is at the root.
+  redirects: { "/es/": `${base ?? ""}/` },
 
   vite: {
     plugins: [tailwindcss()],
   },
 
-  integrations: [sitemap()],
+  // Prices are from the Spanish market: the other languages stay out of search
+  // until there's data of their own (see the robots tag in PriceLayout.astro).
+  integrations: [sitemap({ filter: (page) => !/\/(en|fr|it|pl)\//.test(new URL(page).pathname) })],
 });

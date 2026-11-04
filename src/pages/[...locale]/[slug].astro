@@ -1,11 +1,11 @@
 ---
 // One dynamic segment serves both kinds of page: a category
-// (/es/tasador/tarjetas-graficas/) and a product (/es/tasador/812-rtx-3060/),
-// in every language (/en/price-guide/graphics-cards/…).
-import PriceLayout from "../../../layouts/PriceLayout.astro";
-import PriceBrowser from "../../../components/prices/PriceBrowser.astro";
-import PriceTile from "../../../components/prices/PriceTile.astro";
-import { locales, type Locale } from "../../../i18n";
+// (/tarjetas-graficas/) and a product (/812-rtx-3060/), in every language
+// (/en/graphics-cards/…; Spanish is at the root).
+import PriceLayout from "../../layouts/PriceLayout.astro";
+import PriceBrowser from "../../components/prices/PriceBrowser.astro";
+import PriceTile from "../../components/prices/PriceTile.astro";
+import { locales, type Locale } from "../../i18n";
 import {
     categories,
     categoryHref,
@@ -21,8 +21,8 @@ import {
     homeHref,
     type PriceCategory,
     type PriceItem,
-} from "../../../data/prices";
-import { pricesText } from "../../../data/prices-i18n";
+} from "../../data/prices";
+import { pricesText } from "../../data/prices-i18n";
 
 type Props = { lang: Locale } & (
     | { category: PriceCategory; item?: undefined }
@@ -31,14 +31,14 @@ type Props = { lang: Locale } & (
 
 export function getStaticPaths() {
     return locales.flatMap((lang) => {
-        const section = pricesText[lang].section;
+        const locale = lang === "es" ? undefined : lang;
         const last = (path: string) => path.split("/").at(-2)!;
         return [
             ...categories.map((category) => ({
-                params: { lang, section, slug: last(categoryHref(category.id, lang)) },
+                params: { locale, slug: last(categoryHref(category.id, lang)) },
                 props: { lang, category },
             })),
-            ...items.map((item) => ({ params: { lang, section, slug: last(itemHref(item, lang)) }, props: { lang, item } })),
+            ...items.map((item) => ({ params: { locale, slug: last(itemHref(item, lang)) }, props: { lang, item } })),
         ];
     });
 }
@@ -100,6 +100,18 @@ const related = item ? relatedItems(item) : [];
             </nav>
             <h1 class="bm-h1">{catName}</h1>
         </PriceBrowser>
+        <!-- The list above grows with a button, which crawlers don't press: this
+             links every product, also without JavaScript. -->
+        <section class="bm-wrap bm-section">
+            <details class="bm-all">
+                <summary>{p.allIn(catName, categoryItems.length)}</summary>
+                <ul>
+                    {[...categoryItems]
+                        .sort((a, b) => a.displayName.localeCompare(b.displayName, lang))
+                        .map((i) => <li><a href={itemHref(i, lang)}>{i.displayName}</a></li>)}
+                </ul>
+            </details>
+        </section>
     )}
 
     {item && (
@@ -149,9 +161,7 @@ const related = item ? relatedItems(item) : [];
                                 part.type === "currency" ? <small>{part.value}</small> : part.value,
                             )}
                         </p>
-                        <p class="bm-figure-label">
-                            {p.reference} · {p.updatedOn(formatDate(item.updated_at, lang))}
-                        </p>
+                        <p class="bm-answer">{p.answer(item.displayName, formatPrice(item.price_cents, lang), formatDate(item.updated_at, lang))}</p>
                         <div class="bm-item-actions">
                             {[
                                 { name: "Wallapop", href: item.wallapopUrl },

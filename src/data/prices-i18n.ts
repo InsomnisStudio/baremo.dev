@@ -5,9 +5,7 @@
 import type { Locale } from "../i18n";
 
 export interface PricesText {
-    // The URL segment: /es/tasador/, /en/price-guide/…
-    section: string;
-    // The search page's: /es/tasador/buscar/…
+    // The search page's URL segment: /buscar/, /en/search/…
     searchSlug: string;
     badge: string;
     title: string;
@@ -26,7 +24,9 @@ export interface PricesText {
     product: string;
     reference: string;
     referenceShort: string;
-    updatedOn: (date: string) => string;
+    // A product's price as a sentence: what someone searching for it came to ask.
+    answer: (name: string, price: string, date: string) => string;
+    allIn: (category: string, count: number) => string;
     filters: string;
     priceFilter: string;
     minPrice: string;
@@ -74,7 +74,6 @@ export interface PricesText {
 
 export const pricesText: Record<Locale, PricesText> = {
     es: {
-        section: "tasador",
         searchSlug: "buscar",
         badge: "Tasador de segunda mano",
         title: "Lo que vale lo usado, tasado con datos",
@@ -94,7 +93,9 @@ export const pricesText: Record<Locale, PricesText> = {
         product: "Artículo",
         reference: "Precio de referencia",
         referenceShort: "ref.",
-        updatedOn: (d) => `actualizado el ${d}`,
+        answer: (name, price, date) =>
+            `${name} se vende de segunda mano por unos ${price}. Precio basado en anuncios de Wallapop y Vinted, actualizado el ${date}.`,
+        allIn: (c, n) => `Todas las fichas de ${c.toLowerCase()} (${n})`,
         filters: "Filtros",
         priceFilter: "Precio de referencia",
         minPrice: "Precio mínimo",
@@ -157,7 +158,6 @@ export const pricesText: Record<Locale, PricesText> = {
         },
     },
     en: {
-        section: "price-guide",
         searchSlug: "search",
         badge: "Second-hand price guide · Spain",
         title: "What used things are worth, priced with data",
@@ -177,7 +177,9 @@ export const pricesText: Record<Locale, PricesText> = {
         product: "Item",
         reference: "Reference price",
         referenceShort: "ref.",
-        updatedOn: (d) => `updated ${d}`,
+        answer: (name, price, date) =>
+            `${name} sells second-hand for around ${price} in Spain. Based on Wallapop and Vinted listings, updated ${date}.`,
+        allIn: (c, n) => `All ${c.toLowerCase()} (${n})`,
         filters: "Filters",
         priceFilter: "Reference price",
         minPrice: "Minimum price",
@@ -240,7 +242,6 @@ export const pricesText: Record<Locale, PricesText> = {
         },
     },
     fr: {
-        section: "argus",
         searchSlug: "recherche",
         badge: "Argus de l'occasion · Espagne",
         title: "Ce que vaut l'occasion, estimé avec des données",
@@ -260,7 +261,9 @@ export const pricesText: Record<Locale, PricesText> = {
         product: "Article",
         reference: "Prix de référence",
         referenceShort: "réf.",
-        updatedOn: (d) => `mis à jour le ${d}`,
+        answer: (name, price, date) =>
+            `${name} se vend d'occasion autour de ${price} en Espagne. Prix basé sur les annonces Wallapop et Vinted, mis à jour le ${date}.`,
+        allIn: (c, n) => `Toutes les fiches : ${c.toLowerCase()} (${n})`,
         filters: "Filtres",
         priceFilter: "Prix de référence",
         minPrice: "Prix minimum",
@@ -323,7 +326,6 @@ export const pricesText: Record<Locale, PricesText> = {
         },
     },
     it: {
-        section: "quotazioni",
         searchSlug: "cerca",
         badge: "Quotazioni dell'usato · Spagna",
         title: "Quanto vale l'usato, stimato con i dati",
@@ -343,7 +345,9 @@ export const pricesText: Record<Locale, PricesText> = {
         product: "Articolo",
         reference: "Prezzo di riferimento",
         referenceShort: "rif.",
-        updatedOn: (d) => `aggiornato il ${d}`,
+        answer: (name, price, date) =>
+            `${name} si vende usato a circa ${price} in Spagna. Prezzo basato sugli annunci di Wallapop e Vinted, aggiornato il ${date}.`,
+        allIn: (c, n) => `Tutte le schede: ${c.toLowerCase()} (${n})`,
         filters: "Filtri",
         priceFilter: "Prezzo di riferimento",
         minPrice: "Prezzo minimo",
@@ -406,7 +410,6 @@ export const pricesText: Record<Locale, PricesText> = {
         },
     },
     pl: {
-        section: "wycena",
         searchSlug: "szukaj",
         badge: "Wycena rzeczy używanych · Hiszpania",
         title: "Ile warte są rzeczy używane, wycenione na podstawie danych",
@@ -426,7 +429,9 @@ export const pricesText: Record<Locale, PricesText> = {
         product: "Artykuł",
         reference: "Cena referencyjna",
         referenceShort: "ref.",
-        updatedOn: (d) => `aktualizacja: ${d}`,
+        answer: (name, price, date) =>
+            `${name} sprzedaje się z drugiej ręki za około ${price} w Hiszpanii. Cena na podstawie ogłoszeń z Wallapop i Vinted, aktualizacja: ${date}.`,
+        allIn: (c, n) => `Wszystkie karty: ${c.toLowerCase()} (${n})`,
         filters: "Filtry",
         priceFilter: "Cena referencyjna",
         minPrice: "Cena minimalna",

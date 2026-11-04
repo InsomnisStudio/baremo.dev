@@ -9,7 +9,7 @@ interface Props {
     seo: { title: string; description: string };
     structuredData?: Record<string, unknown>[];
     modifiedAt?: string;
-    // The page's path in each language: /es/tasador/, /en/price-guide/…
+    // The page's path in each language: /, /en/…
     localePaths: Record<Locale, string>;
 }
 
@@ -26,7 +26,6 @@ const languages = Object.entries(localePaths).map(([locale, path]) => ({
     locale: locale as Locale,
     href: path,
     hreflang: hreflangByLocale[locale as Locale],
-    url: new URL(path, Astro.site),
 }));
 ---
 
@@ -47,9 +46,9 @@ const languages = Object.entries(localePaths).map(([locale, path]) => ({
         <meta property="og:locale" content={hreflangByLocale[lang].replace("-", "_")} />
         <meta name="twitter:card" content="summary" />
         {modifiedAt && <meta property="article:modified_time" content={modifiedAt} />}
-        {languages.map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.url.toString()} />)}
-        <link rel="alternate" hreflang="x-default" href={new URL(localePaths.es, Astro.site).toString()} />
-        <meta name="robots" content="index,follow,max-image-preview:large" />
+        <!-- Prices are from the Spanish market: the other languages stay out of search
+             until there's data of their own. With them back, restore hreflang here. -->
+        <meta name="robots" content={lang === "es" ? "index,follow,max-image-preview:large" : "noindex,follow"} />
         <link rel="icon" type="image/svg+xml" href={withBase("/favicon.svg")} />
         <meta name="theme-color" content="#ebeae6" />
         <link rel="preload" href={withBase("/fonts/Geist-Variable.woff2")} as="font" type="font/woff2" crossorigin />

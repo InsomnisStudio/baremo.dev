@@ -1,5 +1,5 @@
-// Second-hand prices measured by market, for the price pages (/es/tasador/,
-// /en/price-guide/…; their words are in prices-i18n.ts).
+// Second-hand prices measured by market, for the price pages (their words are
+// in prices-i18n.ts).
 //
 // For now they come from a snapshot (prices.json), exported from market with
 // `scripts/export_public_prices.sql`. Once /api/prices/* exists in vallax_api
@@ -250,20 +250,18 @@ export const priceSpread = (category: string): PriceSpread | null => {
     return spread;
 };
 
-export const sectionHref = (lang: Locale) => withBase(`/${lang}/${pricesText[lang].section}/`);
-
 // Spanish, the main language, is at the root.
 export const homeHref = (lang: Locale) => withBase(lang === "es" ? "/" : `/${lang}/`);
 
-export const searchHref = (lang: Locale) => `${sectionHref(lang)}${pricesText[lang].searchSlug}/`;
+export const searchHref = (lang: Locale) => `${homeHref(lang)}${pricesText[lang].searchSlug}/`;
 
 export const categoryName = (id: string, lang: Locale) =>
     pricesText[lang].categories[id] ?? categoryById.get(id)?.name ?? id;
 
 export const categoryHref = (id: string, lang: Locale) =>
-    `${sectionHref(lang)}${slugify(categoryName(id, lang))}/`;
+    `${homeHref(lang)}${slugify(categoryName(id, lang))}/`;
 
-export const itemHref = (item: PriceItem, lang: Locale) => `${sectionHref(lang)}${item.id}-${item.slug}/`;
+export const itemHref = (item: PriceItem, lang: Locale) => `${homeHref(lang)}${item.id}-${item.slug}/`;
 
 // The same page in every language, for the language menu and hreflang.
 export const localePaths = (path: (lang: Locale) => string) =>
