@@ -252,6 +252,9 @@ export const priceSpread = (category: string): PriceSpread | null => {
 
 export const sectionHref = (lang: Locale) => withBase(`/${lang}/${pricesText[lang].section}/`);
 
+// Spanish, the main language, is at the root.
+export const homeHref = (lang: Locale) => withBase(lang === "es" ? "/" : `/${lang}/`);
+
 export const searchHref = (lang: Locale) => `${sectionHref(lang)}${pricesText[lang].searchSlug}/`;
 
 export const categoryName = (id: string, lang: Locale) =>

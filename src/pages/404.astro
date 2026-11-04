@@ -2,7 +2,7 @@
 // GitHub Pages serves this for any address that doesn't exist. It can't know the
 // visitor's language, so it speaks the two the app has.
 import "/src/assets/css/styles.css";
-import { sectionHref, withBase } from "../data/prices";
+import { homeHref, withBase } from "../data/prices";
 ---
 
 <!doctype html>
@@ -19,7 +19,7 @@ import { sectionHref, withBase } from "../data/prices";
             <img class="bm-logo" src={withBase("/baremo-logo-papel.svg")} width="114" height="22" alt="Baremo" />
             <h1 class="bm-h1 mt-12">Esta página no existe</h1>
             <p class="bm-muted mt-3" lang="en">This page doesn't exist.</p>
-            <a class="bm-btn bm-btn-primary mt-8" href={sectionHref("es")}>Ir a la portada</a>
+            <a class="bm-btn bm-btn-primary mt-8" href={homeHref("es")}>Ir a la portada</a>
         </main>
     </body>
 </html>

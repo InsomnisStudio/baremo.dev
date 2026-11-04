@@ -11,10 +11,17 @@ export default defineConfig({
   site: process.env.SITE_URL || "https://baremo.dev",
   base: base || undefined,
 
-  redirects: {
-    // Redirects don't get the base by themselves.
-    "/": `${base ?? ""}/es/tasador/`,
-  },
+  // The landing used to live under each language's section.
+  redirects: Object.fromEntries(
+    [
+      ["/es/", "/"],
+      ["/es/tasador/", "/"],
+      ["/en/price-guide/", "/en/"],
+      ["/fr/argus/", "/fr/"],
+      ["/it/quotazioni/", "/it/"],
+      ["/pl/wycena/", "/pl/"],
+    ].map(([from, to]) => [from, `${base ?? ""}${to}`]),
+  ),
 
   vite: {
     plugins: [tailwindcss()],

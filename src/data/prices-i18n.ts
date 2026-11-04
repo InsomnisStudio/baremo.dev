@@ -9,7 +9,6 @@ export interface PricesText {
     section: string;
     // The search page's: /es/tasador/buscar/…
     searchSlug: string;
-    nav: string;
     badge: string;
     title: string;
     lead: string;
@@ -77,7 +76,6 @@ export const pricesText: Record<Locale, PricesText> = {
     es: {
         section: "tasador",
         searchSlug: "buscar",
-        nav: "Tasador",
         badge: "Tasador de segunda mano",
         title: "Lo que vale lo usado, tasado con datos",
         lead: "Precios de referencia de consolas, videojuegos y componentes, medidos en anuncios de segunda mano. Cada precio lleva su fecha.",
@@ -161,7 +159,6 @@ export const pricesText: Record<Locale, PricesText> = {
     en: {
         section: "price-guide",
         searchSlug: "search",
-        nav: "Price guide",
         badge: "Second-hand price guide · Spain",
         title: "What used things are worth, priced with data",
         lead: "Reference prices for consoles, video games and PC parts, measured on second-hand listings in Spain. Every price carries its date.",
@@ -245,7 +242,6 @@ export const pricesText: Record<Locale, PricesText> = {
     fr: {
         section: "argus",
         searchSlug: "recherche",
-        nav: "Argus",
         badge: "Argus de l'occasion · Espagne",
         title: "Ce que vaut l'occasion, estimé avec des données",
         lead: "Prix de référence des consoles, jeux vidéo et composants, mesurés sur des annonces d'occasion en Espagne. Chaque prix porte sa date.",
@@ -329,7 +325,6 @@ export const pricesText: Record<Locale, PricesText> = {
     it: {
         section: "quotazioni",
         searchSlug: "cerca",
-        nav: "Quotazioni",
         badge: "Quotazioni dell'usato · Spagna",
         title: "Quanto vale l'usato, stimato con i dati",
         lead: "Prezzi di riferimento di console, videogiochi e componenti, misurati sugli annunci dell'usato in Spagna. Ogni prezzo ha la sua data.",
@@ -413,7 +408,6 @@ export const pricesText: Record<Locale, PricesText> = {
     pl: {
         section: "wycena",
         searchSlug: "szukaj",
-        nav: "Wycena",
         badge: "Wycena rzeczy używanych · Hiszpania",
         title: "Ile warte są rzeczy używane, wycenione na podstawie danych",
         lead: "Ceny referencyjne konsol, gier i podzespołów, mierzone na ogłoszeniach z drugiej ręki w Hiszpanii. Każda cena ma swoją datę.",

@@ -1,7 +1,7 @@
 ---
 import "/src/assets/css/styles.css";
 import type { Locale } from "../i18n";
-import { searchHref, sectionHref, withBase } from "../data/prices";
+import { homeHref, searchHref, withBase } from "../data/prices";
 import { pricesText } from "../data/prices-i18n";
 
 interface Props {
@@ -68,7 +68,7 @@ const languages = Object.entries(localePaths).map(([locale, path]) => ({
     <body>
         <header class="bm-header">
             <div class="bm-wrap">
-                <a href={sectionHref(lang)} aria-label="Baremo">
+                <a href={homeHref(lang)} aria-label="Baremo">
                     <img class="bm-logo bm-on-papel" src={withBase("/baremo-logo-papel.svg")} width="114" height="22" alt="Baremo" />
                     <img class="bm-logo bm-on-grafito" src={withBase("/baremo-logo-grafito.svg")} width="114" height="22" alt="Baremo" />
                 </a>

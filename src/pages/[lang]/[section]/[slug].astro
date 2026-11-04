@@ -18,7 +18,7 @@ import {
     localePaths,
     priceParts,
     relatedItems,
-    sectionHref,
+    homeHref,
     type PriceCategory,
     type PriceItem,
 } from "../../../data/prices";
@@ -68,7 +68,7 @@ const seo = item
       };
 const paths = localePaths((l) => (item ? itemHref(item, l) : categoryHref(category!.id, l)));
 const crumbs = [
-    { name: p.nav, url: `${site}${sectionHref(lang)}` },
+    { name: "Baremo", url: `${site}${homeHref(lang)}` },
     ...(item ? [{ name: catName, url: `${site}${categoryHref(item.category, lang)}` }] : []),
     { name: title, url: `${site}${paths[lang]}` },
 ];
