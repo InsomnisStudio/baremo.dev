@@ -1,7 +1,7 @@
 ---
 import "/src/assets/css/styles.css";
 import type { Locale } from "../i18n";
-import { searchHref, sectionHref } from "../data/prices";
+import { searchHref, sectionHref, withBase } from "../data/prices";
 import { pricesText } from "../data/prices-i18n";
 
 interface Props {
@@ -50,10 +50,10 @@ const languages = Object.entries(localePaths).map(([locale, path]) => ({
         {languages.map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.url.toString()} />)}
         <link rel="alternate" hreflang="x-default" href={new URL(localePaths.es, Astro.site).toString()} />
         <meta name="robots" content="index,follow,max-image-preview:large" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href={withBase("/favicon.svg")} />
         <meta name="theme-color" content="#ebeae6" />
-        <link rel="preload" href="/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
-        <link rel="preload" href="/fonts/GeistMono-Variable.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href={withBase("/fonts/Geist-Variable.woff2")} as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href={withBase("/fonts/GeistMono-Variable.woff2")} as="font" type="font/woff2" crossorigin />
         {
             structuredData.map((data) => (
                 <script is:inline type="application/ld+json" set:html={JSON.stringify(data)} />
@@ -69,8 +69,8 @@ const languages = Object.entries(localePaths).map(([locale, path]) => ({
         <header class="bm-header">
             <div class="bm-wrap">
                 <a href={sectionHref(lang)} aria-label="Baremo">
-                    <img class="bm-logo bm-on-papel" src="/baremo-logo-papel.svg" width="114" height="22" alt="Baremo" />
-                    <img class="bm-logo bm-on-grafito" src="/baremo-logo-grafito.svg" width="114" height="22" alt="Baremo" />
+                    <img class="bm-logo bm-on-papel" src={withBase("/baremo-logo-papel.svg")} width="114" height="22" alt="Baremo" />
+                    <img class="bm-logo bm-on-grafito" src={withBase("/baremo-logo-grafito.svg")} width="114" height="22" alt="Baremo" />
                 </a>
                 <div class="bm-header-end">
                     <a class="bm-btn bm-btn-primary bm-btn-s" href={searchHref(lang)} aria-label={p.findModel}>
@@ -103,8 +103,8 @@ const languages = Object.entries(localePaths).map(([locale, path]) => ({
 
         <footer class="bm-footer">
             <div class="bm-wrap">
-                <img class="bm-logo bm-on-papel" src="/baremo-logo-papel.svg" width="93" height="18" alt="Baremo" />
-                <img class="bm-logo bm-on-grafito" src="/baremo-logo-grafito.svg" width="93" height="18" alt="Baremo" />
+                <img class="bm-logo bm-on-papel" src={withBase("/baremo-logo-papel.svg")} width="93" height="18" alt="Baremo" />
+                <img class="bm-logo bm-on-grafito" src={withBase("/baremo-logo-grafito.svg")} width="93" height="18" alt="Baremo" />
                 <p class="max-w-[60ch]">
                     {p.about}{" "}{p.supportedBy}{" "}<a href={`https://vallax.es/${lang}/`} rel="sponsored noopener">Vallax</a>.
                 </p>

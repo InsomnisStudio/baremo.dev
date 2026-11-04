@@ -4,7 +4,7 @@
 import PriceLayout from "../../../layouts/PriceLayout.astro";
 import PriceTile from "../../../components/prices/PriceTile.astro";
 import { locales, type Locale } from "../../../i18n";
-import { items, localePaths, searchHref, sectionHref } from "../../../data/prices";
+import { items, localePaths, searchHref, sectionHref, withBase } from "../../../data/prices";
 import { pricesText } from "../../../data/prices-i18n";
 
 export function getStaticPaths() {
@@ -19,10 +19,10 @@ const structuredData = [
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: `${p.badge} | Baremo`,
-        url: `https://vallax.es${sectionHref(lang)}`,
+        url: new URL(sectionHref(lang), Astro.site).href,
         potentialAction: {
             "@type": "SearchAction",
-            target: `https://vallax.es${searchHref(lang)}?q={search_term_string}`,
+            target: `${new URL(searchHref(lang), Astro.site).href}?q={search_term_string}`,
             "query-input": "required name=search_term_string",
         },
     },
@@ -47,8 +47,8 @@ const showcase = families[0].flatMap((_, turn) => families.map((family) => famil
     <section class="bm-wrap pt-6">
         <picture>
             <!-- Reduced, the SVG's joints between tiles beat against the screen's pixels. -->
-            <source media="(max-width: 900px)" srcset="/img/teselas/mosaico-portada.webp" type="image/webp" />
-            <img class="bm-mosaic" src="/img/teselas/mosaico-portada.svg" width="1024" height="480" alt={p.mosaicAlt} fetchpriority="high" />
+            <source media="(max-width: 900px)" srcset={withBase("/img/teselas/mosaico-portada.webp")} type="image/webp" />
+            <img class="bm-mosaic" src={withBase("/img/teselas/mosaico-portada.svg")} width="1024" height="480" alt={p.mosaicAlt} fetchpriority="high" />
         </picture>
         <div class="bm-intro">
             <h1 class="bm-hero">{p.title}</h1>

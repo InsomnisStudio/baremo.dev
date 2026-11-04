@@ -66,6 +66,9 @@ export interface PriceItem extends RawItem {
     placeholder: string | null;
 }
 
+// A path of the site, under the folder it's served from (astro.config.mjs).
+export const withBase = (path: string) => `${import.meta.env.BASE_URL.replace(/\/$/, "")}${path}`;
+
 export const generatedAt = new Date(snapshot.generated_at);
 export const categories = snapshot.categories as PriceCategory[];
 const categoryById = new Map(categories.map((c) => [c.id, c]));
@@ -147,19 +150,22 @@ const wallapopUrl = (query: string, category: string) => {
 
 // Resized copies served by the site (scripts/build-thumbs.mjs): 80 px for
 // the table, 352 px for the product page.
-export const imageUrl = (id: number, size: 80 | 352) => `/img/p/${id}-${size}.webp`;
+const imagePath = (id: number, size: 80 | 352) => `/img/p/${id}-${size}.webp`;
+export const imageUrl = (id: number, size: 80 | 352) => withBase(imagePath(id, size));
 
 const images = productImages as Record<string, ProductImage>;
 
 // The tile mosaics, one per family of object.
 const handheld = /^(2ds|3ds|new 3ds|ds |dsi|game boy|ps vita|psp|steam deck|switch)/;
-const placeholder = (raw: RawItem) =>
-    ({
-        game: "/img/teselas/juego.svg",
-        console: handheld.test(raw.name) ? "/img/teselas/portatil.svg" : "/img/teselas/mando.svg",
-        cpu: "/img/teselas/procesador.svg",
-        gpu: "/img/teselas/grafica.svg",
-    })[raw.category] ?? null;
+const placeholder = (raw: RawItem) => {
+    const file = {
+        game: "juego",
+        console: handheld.test(raw.name) ? "portatil" : "mando",
+        cpu: "procesador",
+        gpu: "grafica",
+    }[raw.category];
+    return file ? withBase(`/img/teselas/${file}.svg`) : null;
+};
 
 const sizes = imageSizes as Record<string, number[]>;
 const shape = (size?: number[]): PriceItem["imageShape"] => {
@@ -187,7 +193,7 @@ export const items: PriceItem[] = (snapshot.items as RawItem[]).map((raw) => {
         // keep their box fronts: 2,300 identical mosaics would tell them apart
         // by name alone.
         image:
-            (raw.category === "game" || !mosaic) && images[raw.id] && existsSync(`public${imageUrl(raw.id, 80)}`)
+            (raw.category === "game" || !mosaic) && images[raw.id] && existsSync(`public${imagePath(raw.id, 80)}`)
                 ? images[raw.id]
                 : null,
         placeholder: mosaic,
@@ -244,7 +250,7 @@ export const priceSpread = (category: string): PriceSpread | null => {
     return spread;
 };
 
-export const sectionHref = (lang: Locale) => `/${lang}/${pricesText[lang].section}/`;
+export const sectionHref = (lang: Locale) => withBase(`/${lang}/${pricesText[lang].section}/`);
 
 export const searchHref = (lang: Locale) => `${sectionHref(lang)}${pricesText[lang].searchSlug}/`;
 

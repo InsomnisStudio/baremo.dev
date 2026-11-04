@@ -45,7 +45,7 @@ export function getStaticPaths() {
 
 const { lang, category, item } = Astro.props as Props;
 const p = pricesText[lang];
-const site = "https://vallax.es";
+const site = Astro.site!.origin;
 const appStore = "https://apps.apple.com/es/app/vallax/id6793169829";
 const googlePlay = "https://play.google.com/store/apps/details?id=com.insomnis.vallax";
 
